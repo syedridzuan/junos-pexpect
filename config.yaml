@@ -1,0 +1,16 @@
+username: user01
+password : pass123
+
+output : result.txt
+
+routers:
+  -
+    - pe-01
+    - 192.168.0.1
+  -
+    - pe-02
+    - 192.168.0.2
+
+commands:
+  - 'show version'
+  - 'show chassis routing-engine'

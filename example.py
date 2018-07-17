@@ -1,51 +1,56 @@
 import datetime
 import pexpect
+import yaml
+from pprint import pprint as pp
 
-
-username = 'user'
-password = 'abc123'
-
-routers = (['192.168.0.1', 'pe01'],)
-
-commands = ('show version',
-           'show chassis routing-engine')
 
 now = datetime.datetime.now()
 currentDateTime = now.strftime('%m-%d-%Y %H:%M:%S')
-
-filename = "result.txt"
-
+config_file = 'config.yaml'
 
 def main():
     print("This is main")
-    for router in routers:
-        prompt = username + "@" + router[1] + ">"
+    load_config(config_file)
+    for router in config['routers']:
+        prompt = router[0] + ">"
         print(prompt)
-        exec_command(router[0], prompt)
+        exec_command(router[0], router[1], prompt)
 
-def exec_command(router, prompt):
 
-        child = pexpect.spawn('ssh {}@{}'.format(username, router) )
+def load_config(config_file):
+    global config
+    config = yaml.load(open(config_file))
+
+
+def exec_command(hostname ,ip_address, prompt):
+    try:
+        child = pexpect.spawn('ssh {}@{}'.format(config['username'], ip_address) )
         child.expect("assword:")
         print(child.before)
-        child.sendline(password)
+        child.sendline(config['password'])
         child.expect(prompt)
+
+    except:
+        print("Unable to connect to {}".format(hostname))
+
+    else:
         child.sendline("set cli screen-length 0")
         child.expect(prompt)
-        for command in commands:
+        for command in config['commands']:
             child.sendline(command)
             child.expect(prompt)
-            write_to_file(child.before)
+            write_to_file(child.before, hostname)
+        print("host completed, exiting..")
         child.sendline('quit')
-        #
-        # print("Unable to connect to {}".format(router))
 
-def write_to_file(output):
-    with open(filename, 'ab') as out:
-        out.write(currentDateTime.center(80, "-").encode())
+
+
+def write_to_file(output, hostname):
+    with open(config['output'], 'ab') as out:
+        title = "-".join([hostname,currentDateTime])
+        out.write(title.center(80, "-").encode())
         out.write("\r\n".encode())
         out.write(output)
-
 
 if __name__ == "__main__":
     main()
